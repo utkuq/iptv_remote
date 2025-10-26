@@ -71,9 +71,10 @@ class IPTV:
     def play_channel(self, channel_url):
         if channel_url:
             try:
-                subprocess.Popen(["cvlc", channel_url])
+                os.environ["DISPLAY"] = ":0"
+                subprocess.Popen(["vlc", channel_url])
             except FileNotFoundError:
-                print("VLC bulunamadı. Lütfen cVLC'nin PATH'te olduğundan emin olun.")
+                print("VLC bulunamadı. Lütfen VLC'nin PATH'te olduğundan emin olun.")
 
 iptv = IPTV()
 
