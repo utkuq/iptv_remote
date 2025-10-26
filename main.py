@@ -84,10 +84,14 @@ class IPTV:
 
         # Linux GUI için DISPLAY ayarı
         os.environ["DISPLAY"] = ":0"
+        os.environ["XDG_RUNTIME_DIR"] = "/run/user/1000"  # Kullanıcı ID’sine göre
+        os.environ["PULSE_SERVER"] = "unix:/run/user/1000/pulse/native"  # PipeWire Pulse emülasyonu
 
         # VLC'yi tam ekranda aç
         self.vlc_process = subprocess.Popen([
             "vlc",
+            "--aout=alsa",
+            "--alsa-audio-device=default",
             "--fullscreen",
             "--no-video-title-show",
             channel_url
