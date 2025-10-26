@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPTV Kanal Listesi</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>🎬 IPTV Kanal Listesi</h1>
+
+    {% if show_form %}
+    <form method="POST" class="iptv-form">
+        <input type="text" name="iptv_link_input" placeholder="M3U playlist linkini buraya yapıştır" required>
+        <button type="submit">Kaydet & Listele</button>
+    </form>
+    {% else %}
+    <button onclick="document.querySelector('.iptv-form').style.display='flex'">Yeni Link Ekle</button>
+    <form method="POST" class="iptv-form" style="display:none;">
+        <input type="text" name="iptv_link_input" placeholder="Yeni linki buraya yapıştır" required>
+        <button type="submit">Kaydet & Listele</button>
+    </form>
+    {% endif %}
+
+    {% if channels %}
+    <div class="filter-box">
+        <label for="countryFilter">Ülkeye göre filtrele:</label>
+        <select id="countryFilter">
+            <option value="">Tüm Ülkeler</option>
+            {% set countries = channels | map(attribute='country') | unique | list %}
+            {% for c in countries %}
+                <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <input type="text" id="searchInput" class="search-input" placeholder="Kanal ara...">
+    <div class="channel-list" id="channelList">
+        {% for ch in channels %}
+        <div class="channel" data-country="{{ ch.country }}">
+            <a href="{{ url_for('watch', channel_url=ch.url) }}">{{ ch.name }}</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// 🔍 Canlı arama + ülke filtresi
+const searchInput = document.getElementById('searchInput');
+const channels = document.querySelectorAll('.channel');
+const countryFilter = document.getElementById('countryFilter');
+
+function filterChannels() {
+    const query = searchInput.value.toLowerCase();
+    const selectedCountry = countryFilter.value;
+
+    channels.forEach(channel => {
+        const name = channel.querySelector('a').textContent.toLowerCase();
+        const country = channel.dataset.country;
+
+        if ((name.includes(query)) && (selectedCountry === "" || country === selectedCountry)) {
+            channel.style.display = 'block';
+        } else {
+            channel.style.display = 'none';
+        }
+    });
+}
+
+if(searchInput) searchInput.addEventListener('input', filterChannels);
+if(countryFilter) countryFilter.addEventListener('change', filterChannels);
+</script>
+</body>
+</html>
