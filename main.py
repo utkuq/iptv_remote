@@ -12,14 +12,16 @@ class IPTV:
     def __init__(self):
         self.iptv_link = None
         self.channels = []
+        self.vlc_process = None  # VLC process referansı
         self.load_config()
+
         if self.iptv_link:
             try:
                 self.get_channels()
             except Exception as e:
                 print(f"Kanal yüklenirken hata: {e}")
 
-    # 🔹 Config yükleme (boş dosya veya hatalı JSON durumunda güvenli)
+    # 🔹 Config yükleme
     def load_config(self):
         if not os.path.exists(CONFIG_FILE):
             self.save_config()
@@ -42,6 +44,7 @@ class IPTV:
         except Exception as e:
             print(f"Config kaydedilemedi: {e}")
 
+    # 🔹 Kanalları yükle
     def get_channels(self):
         if not self.iptv_link:
             return
@@ -58,6 +61,7 @@ class IPTV:
 
                 channel_url = lines[i + 1].strip() if i + 1 < len(lines) and lines[i + 1].startswith("http") else None
                 
+                # group-title ile kategori/ülke bilgisi
                 group_match = re.search(r'group-title="([^"]+)"', lines[i])
                 country = group_match.group(1) if group_match else "Unknown"
 
@@ -68,13 +72,26 @@ class IPTV:
                         "country": country
                     })
 
+    # 🔹 Kanalı VLC ile aç, önceki varsa kapat
     def play_channel(self, channel_url):
-        if channel_url:
-            try:
-                os.environ["DISPLAY"] = ":0"
-                subprocess.Popen(["vlc", channel_url])
-            except FileNotFoundError:
-                print("VLC bulunamadı. Lütfen VLC'nin PATH'te olduğundan emin olun.")
+        if not channel_url:
+            return
+
+        # Önceki VLC varsa kapat
+        if self.vlc_process and self.vlc_process.poll() is None:
+            self.vlc_process.terminate()
+            self.vlc_process.wait()
+
+        # Linux GUI için DISPLAY ayarı
+        os.environ["DISPLAY"] = ":0"
+
+        # VLC'yi tam ekranda aç
+        self.vlc_process = subprocess.Popen([
+            "vlc",
+            "--fullscreen",
+            "--no-video-title-show",
+            channel_url
+        ])
 
 iptv = IPTV()
 
@@ -87,7 +104,6 @@ def index():
             iptv.iptv_link = new_link
             iptv.save_config()
             iptv.get_channels()
-    # Eğer configte link yoksa veya kullanıcı değiştirmek isterse form göster
     if not iptv.iptv_link:
         show_form = True
     return render_template("index.html", channels=iptv.channels, show_form=show_form)
